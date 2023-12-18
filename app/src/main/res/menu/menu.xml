@@ -1,0 +1,23 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:id="@+id/features">
+        <item
+            android:id="@+id/nav_menu_attendance"
+            android:title="Attendance" />
+        <item
+            android:id="@+id/nav_menu_frag2"
+            android:title="Coming soon" />
+    </group>
+
+    <group>
+        <item
+            android:id="@+id/nav_menu_setting"
+            android:title="Settings" />
+
+        <item
+            android:id="@+id/nav_menu_logout"
+            android:title="Log out" />
+    </group>
+</menu>

@@ -1,0 +1,23 @@
+<!-- res/drawable/edit_text_background.xml -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Border -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="8dp" />
+            <stroke
+                android:color="#9E9E9E"
+                android:width="2dp" />
+        </shape>
+    </item>
+
+    <!-- Padding for the text inside the EditText -->
+    <item android:left="8dp" android:right="8dp" android:top="4dp" android:bottom="4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+
+</layer-list>

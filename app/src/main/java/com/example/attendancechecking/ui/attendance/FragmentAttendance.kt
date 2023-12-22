@@ -1,10 +1,9 @@
-package com.example.attendancechecking.ui
+package com.example.attendancechecking.ui.attendance
 
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -20,12 +19,21 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.attendancechecking.MyApplication
 import com.example.attendancechecking.R
-import com.example.attendancechecking.data.DataRepository
-import com.example.attendancechecking.data.User
+import com.example.attendancechecking.model.User
+import com.example.attendancechecking.viewmodel.MyViewModel
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 class FragmentAttendance : Fragment() {
+    private lateinit var viewModel: MyViewModel
+
     private lateinit var recView: RecyclerView
     private lateinit var refreshLayout: SwipeRefreshLayout
     private lateinit var prevPage: ImageView
@@ -45,11 +53,9 @@ class FragmentAttendance : Fragment() {
 
     private var currentGender: String? = null
     private var currentRole: String? = null
-    private var currentPage: Int = 1
 
-    private lateinit var repo: DataRepository
+    //    private lateinit var repo: DataRepository
     private lateinit var users: List<User>
-    private lateinit var displayedUsers: List<User>
 
     private lateinit var view: View
 
@@ -62,7 +68,6 @@ class FragmentAttendance : Fragment() {
         tvFromDate = view.findViewById(R.id.fromDate)
         tvToDate = view.findViewById(R.id.toDate)
         refreshLayout = view.findViewById(R.id.swipeRefreshLayout)
-        recView = view.findViewById(R.id.rec_view)
         spinnerRow = view.findViewById(R.id.spinnerRows)
         spinnerGender = view.findViewById(R.id.spinnerGender)
         spinnerRole = view.findViewById(R.id.spinnerRole)
@@ -70,8 +75,11 @@ class FragmentAttendance : Fragment() {
         prevPage = view.findViewById(R.id.prevPage)
         nextPage = view.findViewById(R.id.nextPage)
 
-        repo = (requireActivity().application as MyApplication).repo
-//        repo.addLoginUser()
+        recView = view.findViewById(R.id.rec_view)
+        recView.layoutManager = LinearLayoutManager(requireContext())
+
+        viewModel = (requireActivity().application as MyApplication).viewModel
+        reloadUsers()
 
         setupDateFilters()
         setupSpinners()
@@ -85,7 +93,10 @@ class FragmentAttendance : Fragment() {
     private fun setupDateFilters() {
 
         selectedFromDate.set(Calendar.DAY_OF_MONTH, 1)
-        selectedToDate.set(Calendar.DAY_OF_MONTH, selectedToDate.getActualMaximum(Calendar.DAY_OF_MONTH))
+        selectedToDate.set(
+            Calendar.DAY_OF_MONTH,
+            selectedToDate.getActualMaximum(Calendar.DAY_OF_MONTH)
+        )
 
         tvFromDate.text = "From: ${selectedFromDate.get(Calendar.DAY_OF_MONTH)}/${
             selectedFromDate.get(Calendar.MONTH) + 1
@@ -106,8 +117,7 @@ class FragmentAttendance : Fragment() {
                         "From: ${selectedFromDate.get(Calendar.DAY_OF_MONTH)}/${
                             selectedFromDate.get(Calendar.MONTH) + 1
                         }/${selectedFromDate.get(Calendar.YEAR)}"
-                    users = repo.readData(currentGender, currentRole, selectedFromDate, selectedToDate)
-                    getDisplayedUsers()
+                    reloadUsers()
                 },
                 selectedFromDate.get(Calendar.YEAR),
                 selectedFromDate.get(Calendar.MONTH),
@@ -128,8 +138,7 @@ class FragmentAttendance : Fragment() {
                         "To: ${selectedToDate.get(Calendar.DAY_OF_MONTH)}/${
                             selectedToDate.get(Calendar.MONTH) + 1
                         }/${selectedToDate.get(Calendar.YEAR)}"
-                    users = repo.readData(currentGender, currentRole, selectedFromDate, selectedToDate)
-                    getDisplayedUsers()
+                    reloadUsers()
                 },
                 selectedToDate.get(Calendar.YEAR),
                 selectedToDate.get(Calendar.MONTH),
@@ -140,26 +149,20 @@ class FragmentAttendance : Fragment() {
     }
 
     private fun setupRecView() {
-        users = repo.readData(fromDate = selectedFromDate, toDate = selectedToDate)
-        getDisplayedUsers()
+        reloadUsers()
 
         refreshLayout.setOnRefreshListener {
-            // Simulate a background task (e.g., fetching new data)
-            users = repo.readData(currentGender, currentRole, selectedFromDate, selectedToDate)
-            getDisplayedUsers()
-
+            reloadUsers()
             refreshLayout.isRefreshing = false
         }
-
-        recView.layoutManager = LinearLayoutManager(requireContext())
-        recView.adapter = ItemAdapter(displayedUsers)
     }
 
     private fun setupSpinners() {
 
         val genders = listOf("None", "Male", "Female")
 
-        var spinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, genders)
+        var spinnerAdapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, genders)
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerGender.adapter = spinnerAdapter
         spinnerGender.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -169,12 +172,12 @@ class FragmentAttendance : Fragment() {
                     0 -> null
                     else -> genders[p2]
                 }
-                users = repo.readData(currentGender, currentRole, selectedFromDate, selectedToDate)
-                getDisplayedUsers()
+                reloadUsers()
             }
         }
 
-        val roles = listOf("None", "Accountant", "Deputy Leader", "Security", "Receptionist")
+        val roles =
+            listOf("None", "Accountant", "Deputy Leader", "Security", "Receptionist", "Visitor")
         spinnerAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, roles)
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerRole.adapter = spinnerAdapter
@@ -185,8 +188,7 @@ class FragmentAttendance : Fragment() {
                     0 -> null
                     else -> roles[p2]
                 }
-                users = repo.readData(currentGender, currentRole, selectedFromDate, selectedToDate)
-                getDisplayedUsers()
+                reloadUsers()
             }
         }
 
@@ -206,7 +208,7 @@ class FragmentAttendance : Fragment() {
                 pageIndex = 0
                 tvCurrentPage.text = "Page 1"
                 checkPages()
-                getDisplayedUsers()
+                reloadUsers()
             }
         }
     }
@@ -217,14 +219,14 @@ class FragmentAttendance : Fragment() {
             if (pageIndex > 0) pageIndex--
             tvCurrentPage.text = "Page ${pageIndex + 1}"
             checkPages()
-            getDisplayedUsers()
+            reloadUsers()
         }
 
         nextPage.setOnClickListener {
             if (pageIndex < maxPages - 1) pageIndex++
             tvCurrentPage.text = "Page ${pageIndex + 1}"
             checkPages()
-            getDisplayedUsers()
+            reloadUsers()
         }
     }
 
@@ -252,41 +254,54 @@ class FragmentAttendance : Fragment() {
         }
     }
 
-    private fun getDisplayedUsers(){
-        maxPages = (users.size + pageSize - 1) / pageSize
-        checkPages()
-
-        // Validate input parameters
-        if (pageSize <= 0 || pageIndex < 0) {
-            throw IllegalArgumentException("Invalid pageSize or pageIndex")
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun reloadUsers() {
+        GlobalScope.launch {
+            users = viewModel.getAttendance(
+                selectedFromDate,
+                selectedToDate,
+                pageIndex,
+                pageSize,
+                currentGender,
+                currentRole
+            )
+            withContext(Dispatchers.Main) {
+                recView.adapter = ItemAdapter(users)
+            }
         }
-
-        val startIndex = pageIndex * pageSize
-        val endIndex = minOf((pageIndex + 1) * pageSize, users.size)
-
-        if (startIndex >= users.size) {
-            // If the start index is beyond the size of the list, return an empty list
-            displayedUsers = emptyList()
-        }
-
-        // Return a sublist based on the calculated start and end indices
-        Log.i(MainActivity.TAG, "List: $startIndex $endIndex")
-        displayedUsers = users.subList(startIndex, endIndex)
-
-        recView.adapter = ItemAdapter(displayedUsers)
     }
 
     inner class ItemAdapter(private val itemList: List<User>) :
         RecyclerView.Adapter<ItemAdapter.ViewHolder>() {
 
         inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            @SuppressLint("SetTextI18n")
             fun bind(user: User) {
                 itemView.findViewById<TextView>(R.id.userName).text = user.name
-                itemView.findViewById<TextView>(R.id.userTime).text =
-                    "${user.accessTime.get(Calendar.HOUR)}:${user.accessTime.get(Calendar.MINUTE)}"
-                itemView.findViewById<TextView>(R.id.userTime).setTextColor(if(user.type == "IN") resources.getColor(
-                    R.color.green
-                ) else resources.getColor(R.color.red))
+
+                val formatter =
+                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+                val time = formatter.parse(user.access_time)
+                val accessTime = Calendar.getInstance()
+                if (time != null) {
+                    accessTime.time = time
+                }
+
+                var displayHour: String
+                with(accessTime.get(Calendar.HOUR)) {
+                    displayHour = if (this < 10) "0$this" else this.toString()
+                }
+                var displayMinute: String
+                with(accessTime.get(Calendar.MINUTE)) {
+                    displayMinute = if (this < 10) "0$this" else this.toString()
+                }
+                itemView.findViewById<TextView>(R.id.place).text = user.place
+                itemView.findViewById<TextView>(R.id.userTime).text = "$displayHour:$displayMinute"
+                itemView.findViewById<TextView>(R.id.userTime).setTextColor(
+                    if (user.type == "Check-in") resources.getColor(
+                        R.color.green
+                    ) else resources.getColor(R.color.red)
+                )
                 itemView.findViewById<ImageView>(R.id.userAvatar)
                     .setImageResource(if (user.gender == "Male") R.drawable.male else R.drawable.female)
                 itemView.findViewById<ImageView>(R.id.userDetail).setOnClickListener {

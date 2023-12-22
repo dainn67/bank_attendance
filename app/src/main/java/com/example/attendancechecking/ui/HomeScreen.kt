@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
@@ -21,6 +22,7 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.attendancechecking.R
+import com.example.attendancechecking.ui.attendance.FragmentAttendance
 import com.google.android.material.navigation.NavigationView
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -32,8 +34,8 @@ class HomeScreen : AppCompatActivity() {
     private lateinit var fragsContainer: FragmentContainerView
     private lateinit var drawerToggle: ActionBarDrawerToggle
 
-//    private lateinit var navController: NavController
-//    private lateinit var appbarConfiguration: AppBarConfiguration
+    private lateinit var navController: NavController
+    private lateinit var appbarConfiguration: AppBarConfiguration
 
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -41,7 +43,7 @@ class HomeScreen : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        sharedPreferences = this.getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
+        sharedPreferences = this@HomeScreen.getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
 
         drawerLayout = findViewById(R.id.drawer_layout)
         toolbar = findViewById(R.id.toolbar)
@@ -66,18 +68,22 @@ class HomeScreen : AppCompatActivity() {
         actionBar?.setHomeAsUpIndicator(R.drawable.baseline_menu_24)
 
         val navHeader = navView.getHeaderView(0)
-        navHeader.findViewById<TextView>(R.id.textViewUsername).text = sharedPreferences.getString("username", "user1")
 
-//        navController = findNavController(R.id.host_fragment)
-//        appbarConfiguration = AppBarConfiguration(
-//            setOf(
-//                R.id.nav_menu_attendance,
-//                R.id.nav_menu_frag2
-//            ),
-//            drawerLayout
-//        )
-//        setupActionBarWithNavController(navController, appbarConfiguration)
-//        navView.setupWithNavController(navController)
+        Log.i(MainActivity.TAG, "2: " + sharedPreferences.getString("username", "username empty").toString())
+        Log.i(MainActivity.TAG, "2: " + sharedPreferences.getString("email", "email empty").toString())
+        navHeader.findViewById<TextView>(R.id.textViewUsername).text = sharedPreferences.getString("username", "user1")
+        navHeader.findViewById<TextView>(R.id.textViewEmail).text = sharedPreferences.getString("email", "user1@gmail.com")
+
+        navController = findNavController(R.id.host_fragment)
+        appbarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.nav_menu_attendance,
+                R.id.nav_menu_user
+            ),
+            drawerLayout
+        )
+        setupActionBarWithNavController(navController, appbarConfiguration)
+        navView.setupWithNavController(navController)
 
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {

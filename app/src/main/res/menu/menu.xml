@@ -5,19 +5,23 @@
     <group android:id="@+id/features">
         <item
             android:id="@+id/nav_menu_attendance"
-            android:title="Attendance" />
+            android:title="Attendance"
+            android:icon="@drawable/list"/>
         <item
-            android:id="@+id/nav_menu_frag2"
-            android:title="Coming soon" />
+            android:id="@+id/nav_menu_user"
+            android:title="User"
+            android:icon="@drawable/group"/>
     </group>
 
     <group>
         <item
             android:id="@+id/nav_menu_setting"
-            android:title="Settings" />
+            android:title="Settings"
+            android:icon="@drawable/setting"/>
 
         <item
             android:id="@+id/nav_menu_logout"
-            android:title="Log out" />
+            android:title="Log out"
+            android:icon="@drawable/log_out"/>
     </group>
 </menu>

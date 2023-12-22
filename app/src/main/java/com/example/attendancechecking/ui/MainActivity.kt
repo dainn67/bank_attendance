@@ -8,25 +8,40 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RelativeLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import com.example.attendancechecking.MyApplication
 import com.example.attendancechecking.R
 import com.example.attendancechecking.data.DataRepository
+import com.example.attendancechecking.viewmodel.MyViewModel
 import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.*
 import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var repo: DataRepository
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var viewModel: MyViewModel
+
+    private var isLoading = false
+    private lateinit var loadingLiveData: MutableLiveData<Boolean>
 
     companion object {
         const val TAG = "konichiwa"
     }
 
+    private lateinit var waitingView: RelativeLayout
     private lateinit var etAccount: EditText
     private lateinit var etAccountTil: TextInputLayout
     private lateinit var etPassword: EditText
@@ -39,10 +54,13 @@ class MainActivity : AppCompatActivity() {
         etPassword.text.clear()
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        viewModel = (application as MyApplication).viewModel
 
         etAccount = findViewById(R.id.username)
         etPassword = findViewById(R.id.password)
@@ -50,8 +68,9 @@ class MainActivity : AppCompatActivity() {
         etAccountTil = findViewById(R.id.username_til)
         etPasswordTil = findViewById(R.id.password_til)
 
-        repo = (application as MyApplication).repo
         sharedPreferences = this.getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
+
+        listenToLoadingState()
 
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = sharedPreferences.getLong("timeout", 0)
@@ -60,15 +79,11 @@ class MainActivity : AppCompatActivity() {
             moveToHome()
         }
 
-//        repo.addDummyData()
-//        repo.addLoginUser()
-
         etAccount.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
             override fun afterTextChanged(p0: Editable?) {}
             override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
                 etAccountTil.error = null
-                etAccountTil.setBackgroundResource(R.drawable.et_background_red)
                 etAccount.setBackgroundResource(R.drawable.et_background)
             }
         })
@@ -103,23 +118,36 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (account.isNotEmpty() && password.isNotEmpty()) {
-                when (repo.checkLogin(account, password)) {
-                    0 -> {
-                        saveUserInfo(account)
-                        moveToHome()
+                loadingLiveData.value = true
+                GlobalScope.launch {
+                    val job = async { viewModel.login(account, password) }
+                    val user = job.await()
+                    withContext(Dispatchers.Main){
+                        loadingLiveData.value = false
                     }
-
-                    1 -> {
-                        etAccountTil.error = "Username not exist"
-                        etAccount.setBackgroundResource(R.drawable.et_background_red)
-                    }
-
-                    else -> {
-                        etPasswordTil.error = "Wrong password or invalid information"
-                        etPassword.setBackgroundResource(R.drawable.et_background_red)
+                    if(user != null){
+                        Log.i(TAG, "HEHEHEH")
+                        saveUserInfo(user.username, user.email)
+                        withContext(Dispatchers.Main){
+                            moveToHome()
+                        }
+                    }else{
+                        withContext(Dispatchers.Main){
+                            etPasswordTil.error = "Wrong password or invalid information"
+                            etPassword.setBackgroundResource(R.drawable.et_background_red)
+                        }
                     }
                 }
             }
+        }
+    }
+
+    private fun listenToLoadingState() {
+        waitingView = findViewById(R.id.waitingView)
+        loadingLiveData = MutableLiveData()
+        loadingLiveData.value = isLoading
+        loadingLiveData.observe(this) { newState ->
+            waitingView.visibility = if (newState) View.VISIBLE else View.GONE
         }
     }
 
@@ -129,10 +157,13 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    private fun saveUserInfo(account: String) {
+    private fun saveUserInfo(account: String, email: String) {
         val calendar = Calendar.getInstance()
         calendar.add(Calendar.MINUTE, 15)
         sharedPreferences.edit().putLong("timeout", calendar.timeInMillis).apply()
         sharedPreferences.edit().putString("username", account).apply()
+        sharedPreferences.edit().putString("email", email).apply()
+        Log.i(TAG, "1: " + sharedPreferences.getString("username", "username empty").toString())
+        Log.i(TAG, "1: " + sharedPreferences.getString("email", "email empty").toString())
     }
 }

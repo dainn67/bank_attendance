@@ -1,14 +1,11 @@
-package com.example.attendancechecking.data
-
-import java.time.LocalDateTime
-import java.util.Calendar
+package com.example.attendancechecking.model
 
 data class User(
     val name: String,
     val age: Int,
     val gender: String,
     val role: String,
-    val accessTime: Calendar,
+    val access_time: String,
     val type: String,
     val place: String
 )

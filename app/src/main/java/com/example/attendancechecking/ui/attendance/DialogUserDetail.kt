@@ -47,6 +47,7 @@ class DialogUserDetail(private val user: User) : DialogFragment() {
                 displayMinute = if(this < 10) "0$this" else this.toString()
             }
 
+
             view.findViewById<LinearLayout>(R.id.llAccessTime).visibility = View.VISIBLE
             view.findViewById<LinearLayout>(R.id.llDate).visibility = View.VISIBLE
 

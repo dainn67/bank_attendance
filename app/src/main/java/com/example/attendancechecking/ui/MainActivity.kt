@@ -101,8 +101,8 @@ class MainActivity : AppCompatActivity() {
             var account = etAccount.text.toString().trim()
             var password = etPassword.text.toString().trim()
 
-            account = "dainn"
-            password = "111111"
+//            account = "dainn"
+//            password = "111111"
 
             // Reset error messages
             etAccount.error = null

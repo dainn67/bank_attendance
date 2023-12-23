@@ -23,6 +23,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.attendancechecking.R
 import com.example.attendancechecking.ui.attendance.FragmentAttendance
+import com.example.attendancechecking.ui.users.FragmentUsers
 import com.google.android.material.navigation.NavigationView
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -69,8 +70,6 @@ class HomeScreen : AppCompatActivity() {
 
         val navHeader = navView.getHeaderView(0)
 
-        Log.i(MainActivity.TAG, "2: " + sharedPreferences.getString("username", "username empty").toString())
-        Log.i(MainActivity.TAG, "2: " + sharedPreferences.getString("email", "email empty").toString())
         navHeader.findViewById<TextView>(R.id.textViewUsername).text = sharedPreferences.getString("username", "user1")
         navHeader.findViewById<TextView>(R.id.textViewEmail).text = sharedPreferences.getString("email", "user1@gmail.com")
 
@@ -87,27 +86,27 @@ class HomeScreen : AppCompatActivity() {
 
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
-//                R.id.menu_item_fragment1 -> {
-//                    supportFragmentManager.beginTransaction().apply {
-//                        replace(R.id.frags_container, FragmentAttendance())
-//                        commit()
-//                    }
-//                    drawerLayout.closeDrawer(GravityCompat.START)
-//                    true
-//                }
-//                R.id.menu_item_fragment2 -> {
-//                    supportFragmentManager.beginTransaction().apply {
-//                        replace(R.id.frags_container, FragmentAttendance())
-//                        commit()
-//                    }
-//                    drawerLayout.closeDrawer(GravityCompat.START)
-//                    true
-//                }
+                R.id.nav_menu_attendance -> {
+                    findViewById<TextView>(R.id.title).text = "Attendance"
+                    supportFragmentManager.beginTransaction().apply {
+                        replace(R.id.frags_container, FragmentAttendance())
+                        commit()
+                    }
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
+                R.id.nav_menu_user -> {
+                    findViewById<TextView>(R.id.title).text = "Users"
+                    supportFragmentManager.beginTransaction().apply {
+                        replace(R.id.frags_container, FragmentUsers())
+                        commit()
+                    }
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
                 R.id.nav_menu_logout -> {
                     Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
                     sharedPreferences.edit().clear().apply()
-//                    val intent = Intent(this, MainActivity::class.java)
-//                    startActivity(intent)
                     onBackPressed()
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true

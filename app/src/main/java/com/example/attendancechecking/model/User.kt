@@ -5,7 +5,7 @@ data class User(
     val age: Int,
     val gender: String,
     val role: String,
-    val access_time: String,
-    val type: String,
-    val place: String
+    val access_time: String? = null,
+    val type: String? = null,
+    val place: String? = null
 )

@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.attendancechecking.data.ApiService
 import com.example.attendancechecking.data.RetrofitClient
+import com.example.attendancechecking.model.ListResponse
 import com.example.attendancechecking.model.User
 import com.example.attendancechecking.model.UserLogin
 import com.example.attendancechecking.model.UserRequest
@@ -24,21 +25,21 @@ class MyViewModel : ViewModel() {
         pageSize: Int,
         gender: String?,
         role: String?
-    ): List<User> {
+    ): Pair<List<User>, Int> {
         Log.i(TAG, "Loading lists")
         val fromDateString = "${fromDate.get(Calendar.YEAR)}-${fromDate.get(Calendar.MONTH) + 1}-${fromDate.get(Calendar.DAY_OF_MONTH)}"
         val toDateString = "${toDate.get(Calendar.YEAR)}-${toDate.get(Calendar.MONTH) + 1}-${toDate.get(Calendar.DAY_OF_MONTH)}"
-        val response: Response<List<User>> = retrofit.getAttendance(
+        val response: Response<ListResponse> = retrofit.getAttendance(
             fromDateString, toDateString, pageSize, pageIndex, gender, role
         )
         if (response.isSuccessful) {
             Log.i(TAG, "BODY: " + response.body())
-            return response.body().orEmpty()
+            return Pair(response.body()?.data.orEmpty(), response.body()!!.maxPage)
         } else{
             Log.i(TAG, response.code().toString() + " " + response.message())
         }
 
-        return emptyList()
+        return Pair(emptyList(), 0)
     }
 
     suspend fun login(username: String, password: String): UserLogin?{
@@ -52,5 +53,16 @@ class MyViewModel : ViewModel() {
             return response.body()
         }
         return null
+    }
+
+    suspend fun getUsers(pageIndex: Int, pageSize: Int, gender: String?, role: String?): Pair<List<User>, Int>{
+        Log.i(TAG, "Getting users")
+        val response = retrofit.getUsers(pageIndex, pageSize, gender, role)
+        val list = response.body()?.data
+        if(response.isSuccessful){
+            Log.i(TAG, "BODY: " + response.body())
+            return Pair(list.orEmpty(), response.body()!!.maxPage)
+        }
+        return Pair(emptyList(), 0)
     }
 }

@@ -2,6 +2,8 @@ package com.example.attendancechecking.ui.attendance
 
 import android.annotation.SuppressLint
 import android.app.Dialog
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -25,13 +27,13 @@ class DialogUserDetail(private val user: User) : DialogFragment() {
         val view = inflater.inflate(R.layout.dialog_user_detail, null)
 
         val avatar = view.findViewById<ImageView>(R.id.userAvatar)
-        avatar.setImageResource(if(user.gender == "Male") R.drawable.male else R.drawable.female)
+        avatar.setImageResource(if (user.gender == "Male") R.drawable.male else R.drawable.female)
         view.findViewById<TextView>(R.id.dialogUserName).text = user.name
         view.findViewById<TextView>(R.id.dialogUserAge).text = user.age.toString()
         view.findViewById<TextView>(R.id.dialogUserGender).text = user.gender
         view.findViewById<TextView>(R.id.dialogUserRole).text = user.role
 
-        if(!user.access_time.isNullOrEmpty()){
+        if (!user.access_time.isNullOrEmpty()) {
             val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
             val time = formatter.parse(user.access_time)
             val accessTime = Calendar.getInstance()
@@ -40,11 +42,11 @@ class DialogUserDetail(private val user: User) : DialogFragment() {
             }
             var displayHour: String
             with(accessTime.get(Calendar.HOUR)) {
-                displayHour = if(this < 10) "0$this" else this.toString()
+                displayHour = if (this < 10) "0$this" else this.toString()
             }
             var displayMinute: String
             with(accessTime.get(Calendar.MINUTE)) {
-                displayMinute = if(this < 10) "0$this" else this.toString()
+                displayMinute = if (this < 10) "0$this" else this.toString()
             }
 
 
@@ -54,16 +56,26 @@ class DialogUserDetail(private val user: User) : DialogFragment() {
             with(view.findViewById<TextView>(R.id.dialogUserTime)) {
 
                 this.text = "$displayHour:$displayMinute"
-                this.setTextColor(if(user.type == "Check-in") resources.getColor(
-                    R.color.green
-                ) else resources.getColor(R.color.red))
+                this.setTextColor(
+                    if (user.type == "Check-in") resources.getColor(
+                        R.color.green
+                    ) else resources.getColor(R.color.red)
+                )
             }
-            view.findViewById<TextView>(R.id.dialogUserDate).text = "${accessTime.get(Calendar.DAY_OF_MONTH)}/${accessTime.get(Calendar.MONTH) + 1}/${accessTime.get(Calendar.YEAR)}"
+            view.findViewById<TextView>(R.id.dialogUserDate).text =
+                "${accessTime.get(Calendar.DAY_OF_MONTH)}/${accessTime.get(Calendar.MONTH) + 1}/${
+                    accessTime.get(Calendar.YEAR)
+                }"
         }
 
         val alertDialogBuilder = AlertDialog.Builder(requireContext())
         alertDialogBuilder.setView(view)
+        val dialog = alertDialogBuilder.create().also {
+            it.window?.let { it1 ->
+                it1.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            }
+        }
 
-        return alertDialogBuilder.create()
+        return dialog
     }
 }

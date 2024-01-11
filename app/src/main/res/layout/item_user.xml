@@ -54,7 +54,7 @@
         android:layout_height="wrap_content"
         android:text="Office A"
         android:textSize="14sp"
-        android:layout_marginStart="200dp"
+        android:layout_marginStart="210dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
